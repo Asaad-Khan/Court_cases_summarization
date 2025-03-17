@@ -49,7 +49,7 @@ user_text = st.text_area("Введите текст судебного дела:
 
 if st.button("Создать резюме"):
     if user_text.strip():
-        with st.spinner('Создание резюме...'):
+        with st.spinner('показывать результаты...'):
             summary = summarize_russian(user_text)
         st.subheader("📝 Резюме дела:")
         st.write(summary)
