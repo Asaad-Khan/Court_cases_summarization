@@ -47,7 +47,7 @@ st.title("⚖️ Russian Court Cases Summarizer")
 
 user_text = st.text_area("Введите текст судебного дела:", height=250)
 
-if st.button("Создать резюме"):
+if st.button("показывать результаты"):
     if user_text.strip():
         with st.spinner('показывать результаты...'):
             summary = summarize_russian(user_text)
