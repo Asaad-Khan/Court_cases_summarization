@@ -41,7 +41,7 @@ def summarize_russian(text):
     return summary
 
 # Streamlit interface
-st.set_page_config(page_title="Russian Court Case Summarizer", layout="wide")
+st.set_page_config(page_title="Russian Court Cases Summarizer", layout="wide")
 
 st.title("⚖️ Russian Court Case Summarizer")
 
