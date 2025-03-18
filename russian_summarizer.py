@@ -43,29 +43,41 @@ def extract_punishment_info(text):
         return min(punishment_sentences, key=len)
     return ''
 
-# Optimized summarization function
 def summarize_russian(text):
     cleaned_text = preprocess(text)
     
     # Extract key case details
     defendant, charges = extract_case_details(cleaned_text)
     
-    # Run transformer summarization
+    # Limit input to 512 tokens (prevents extreme-length summaries)
     inputs = tokenizer(
         cleaned_text,
         return_tensors="pt",
         truncation=True,
         max_length=512
     )
+    
+    # Adjust summary length dynamically
+    input_word_count = len(cleaned_text.split())
+    
+    if input_word_count < 100:
+        max_summary_length = 50  # Shorter for short inputs
+    elif input_word_count < 300:
+        max_summary_length = 70  # Medium-length texts
+    else:
+        max_summary_length = 90  # Long texts must stay concise
+    
+    # Generate summary with enforced max length
     summary_ids = model.generate(
         inputs["input_ids"],
         num_beams=5,
         no_repeat_ngram_size=3,
-        length_penalty=2.0,
-        max_length=80,
+        length_penalty=1.5,  # Prevents excessive length
+        max_length=max_summary_length,
         min_length=20,
         early_stopping=True
     )
+    
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
     
     # Extract punishment information
@@ -77,6 +89,8 @@ def summarize_russian(text):
         final_summary += f" {punishment_info}"
     
     return final_summary
+
+
 
 # Streamlit app configuration
 st.set_page_config(page_title="Russian Court Case Summarizer", layout="wide")
