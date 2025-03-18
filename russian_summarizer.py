@@ -19,24 +19,17 @@ def preprocess(text):
     text = re.sub(r"[^а-яА-ЯёЁ0-9\s]", " ", text)
     return re.sub(r'\s+', ' ', text).strip()
 
-
-import re
-
 # Extract key case details
 def extract_case_details(text):
-    """
-    Extracts key details from the court case text.
-    This includes defendant's name, charges, and punishment details.
-    """
     sentences = [sent.text for sent in sentenize(text)]
     
     # Search for the defendant's name
     defendant_match = re.search(r'в отношении\s+([А-ЯЁ][а-яё]+\s[А-ЯЁ][а-яё]+)', text)
-    defendant = defendant_match.group(1) if defendant_match else "Подсудимый"
+    defendant = defendant_match.group(1) if defendant_match else "Defendant"
 
     # Search for the charges (Ugolovny Kodeks reference)
-    charges_match = re.findall(r'ст\.\s*\d+\s*ч\.\s*\d+', text)  # Extracts "ст. 158 ч.2" etc.
-    charges = ', '.join(charges_match) if charges_match else "Не указано"
+    charges_match = re.findall(r'ст\.\s*\d+\s*ч\.\s*\d+', text)
+    charges = ', '.join(charges_match) if charges_match else "Not specified"
 
     return defendant, charges
 
@@ -46,9 +39,8 @@ def extract_punishment_info(text):
     keywords = ['назначил наказание', 'приговорил', 'наказание в виде', 'лет лишения свободы', 'условно', 'колонии']
     punishment_sentences = [sentence for sentence in sentences if any(keyword in sentence.lower() for keyword in keywords)]
     
-    # Extract only the most relevant sentencing statement
     if punishment_sentences:
-        return min(punishment_sentences, key=len)  # Shortest relevant sentence
+        return min(punishment_sentences, key=len)
     return ''
 
 # Optimized summarization function
@@ -80,27 +72,32 @@ def summarize_russian(text):
     punishment_info = extract_punishment_info(cleaned_text)
 
     # Ensure summary contains key case details
-    final_summary = f"{defendant} обвиняется по {charges}. {summary}"
+    final_summary = f"{defendant} is charged under {charges}. {summary}"
     if punishment_info:
         final_summary += f" {punishment_info}"
     
     return final_summary
 
- 
 # Streamlit app configuration
 st.set_page_config(page_title="Russian Court Case Summarizer", layout="wide")
 
 # Streamlit UI
 st.title("⚖️ Russian Court Case Summarizer")
 
-user_text = st.text_area("Введите текст судебного дела:", height=300)
+user_text = st.text_area("Enter the court case text:", height=300)
 
-if st.button("Создать резюме"):
+if st.button("Generate Summary"):
     if user_text.strip():
-        with st.spinner('Создание резюме...'):
+        input_word_count = len(user_text.split())
+        with st.spinner('Generating summary...'):
             summary = summarize_russian(user_text)
-        st.subheader("📌 Резюме дела:")
+        output_word_count = len(summary.split())
+        
+        st.subheader("📌 Case Summary:")
         st.write(summary)
+        
+        st.write(f"**Word count in original text:** {input_word_count}")
+        st.write(f"**Word count in summary:** {output_word_count}")
     else:
-        st.error("Пожалуйста, введите текст судебного дела.")
+        st.error("Please enter court case text.")
 
