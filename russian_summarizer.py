@@ -50,53 +50,56 @@ def summarize_russian(text):
     # Extract key case details
     defendant, charges = extract_case_details(cleaned_text)
     
-    # Limit input to 512 tokens (prevents extreme-length summaries)
+    # Limit input to 1024 tokens (increases capacity for larger texts)
     inputs = tokenizer(
         cleaned_text,
         return_tensors="pt",
         truncation=True,
-        max_length=512
+        max_length=1024
     )
     
-    # Adjust summary length dynamically
+    # Get word count of the cleaned input
     input_word_count = len(cleaned_text.split())
     
-    if input_word_count < 100:
-        max_summary_length = 50  # Shorter for short inputs
-    elif input_word_count < 300:
-        max_summary_length = 70  # Medium-length texts
+    # Dynamically set summary length limits based on input size
+    if input_word_count < 200:
+        max_summary_length = 50  # Shorter summary for short texts
+    elif input_word_count < 1000:
+        max_summary_length = 150  # Medium-length summaries
+    elif input_word_count < 3000:
+        max_summary_length = 300  # Longer summaries for large texts
     else:
-        max_summary_length = 90  # Long texts must stay concise
+        max_summary_length = 500  # Maximum summary length for very long texts
     
     # Generate summary with enforced max length
     summary_ids = model.generate(
         inputs["input_ids"],
         num_beams=5,
         no_repeat_ngram_size=3,
-        length_penalty=1.5,
+        length_penalty=1.2,
         max_length=max_summary_length,
-        min_length=20,
+        min_length=50,
         early_stopping=True
     )
     
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-    
+
     # Extract punishment information
     punishment_info = extract_punishment_info(cleaned_text)
 
-    # Build final summary dynamically
+    # Construct final summary (only in Russian)
     final_summary = summary
     if defendant and charges:
-        final_summary = f"{defendant} is charged under {charges}. {summary}"
+        final_summary = f"{defendant} обвиняется по {charges}. {summary}"
     elif defendant:
-        final_summary = f"{defendant} is involved in the case. {summary}"
+        final_summary = f"{defendant}. {summary}"
     elif charges:
-        final_summary = f"The case involves charges under {charges}. {summary}"
+        final_summary = f"{charges}. {summary}"
     
     if punishment_info:
         final_summary += f" {punishment_info}"
     
-    return final_summary
+    return final_summary.strip()
 
 # Streamlit app configuration
 st.set_page_config(page_title="Russian Court Case Summarizer", layout="wide")
