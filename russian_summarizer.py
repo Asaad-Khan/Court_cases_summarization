@@ -19,7 +19,14 @@ def preprocess(text):
     text = re.sub(r"[^а-яА-ЯёЁ0-9\s]", " ", text)
     return re.sub(r'\s+', ' ', text).strip()
 
-# Robust summarization function to avoid repetition
+# Explicitly extract sentencing details
+def extract_punishment_info(text):
+    sentences = [sent.text for sent in sentenize(text)]
+    keywords = ['назначил наказание', 'приговорил', 'наказание в виде', 'лет лишения свободы', 'условно', 'колонии']
+    punishment_sentences = [sentence for sentence in sentences if any(keyword in sentence.lower() for keyword in keywords)]
+    return ' '.join(punishment_sentences[:2])
+
+# Robust summarization function to avoid repetition and explicitly include punishment info
 def summarize_russian(text):
     cleaned_text = preprocess(text)
     inputs = tokenizer(
@@ -31,13 +38,19 @@ def summarize_russian(text):
     summary_ids = model.generate(
         inputs["input_ids"],
         num_beams=5,
-        no_repeat_ngram_size=3,  # prevents phrase repetition
+        no_repeat_ngram_size=3,
         length_penalty=2.0,
         max_length=100,
         min_length=30,
         early_stopping=True
     )
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+
+    # Append punishment info explicitly
+    punishment_info = extract_punishment_info(cleaned_text)
+    if punishment_info:
+        summary += f" {punishment_info}"
+
     return summary
 
 # Streamlit app configuration
