@@ -19,18 +19,46 @@ def preprocess(text):
     text = re.sub(r"[^а-яА-ЯёЁ0-9\s]", " ", text)
     return re.sub(r'\s+', ' ', text).strip()
 
-# Optimized punishment info extraction (single shortest relevant sentence)
+
+import re
+
+# Extract key case details
+def extract_case_details(text):
+    """
+    Extracts key details from the court case text.
+    This includes defendant's name, charges, and punishment details.
+    """
+    sentences = [sent.text for sent in sentenize(text)]
+    
+    # Search for the defendant's name
+    defendant_match = re.search(r'в отношении\s+([А-ЯЁ][а-яё]+\s[А-ЯЁ][а-яё]+)', text)
+    defendant = defendant_match.group(1) if defendant_match else "Подсудимый"
+
+    # Search for the charges (Ugolovny Kodeks reference)
+    charges_match = re.findall(r'ст\.\s*\d+\s*ч\.\s*\d+', text)  # Extracts "ст. 158 ч.2" etc.
+    charges = ', '.join(charges_match) if charges_match else "Не указано"
+
+    return defendant, charges
+
+# Extract punishment details (years of sentence)
 def extract_punishment_info(text):
     sentences = [sent.text for sent in sentenize(text)]
     keywords = ['назначил наказание', 'приговорил', 'наказание в виде', 'лет лишения свободы', 'условно', 'колонии']
     punishment_sentences = [sentence for sentence in sentences if any(keyword in sentence.lower() for keyword in keywords)]
+    
+    # Extract only the most relevant sentencing statement
     if punishment_sentences:
-        return min(punishment_sentences, key=len)
+        return min(punishment_sentences, key=len)  # Shortest relevant sentence
     return ''
 
 # Optimized summarization function
 def summarize_russian(text):
     cleaned_text = preprocess(text)
+    
+    # Extract key case details
+    defendant, charges = extract_case_details(cleaned_text)
+    
+    # Run transformer summarization
     inputs = tokenizer(
         cleaned_text,
         return_tensors="pt",
@@ -47,14 +75,18 @@ def summarize_russian(text):
         early_stopping=True
     )
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-
-    # Append only one short punishment sentence
+    
+    # Extract punishment information
     punishment_info = extract_punishment_info(cleaned_text)
-    if punishment_info and punishment_info not in summary:
-        summary += f" {punishment_info}"
 
-    return summary
+    # Ensure summary contains key case details
+    final_summary = f"{defendant} обвиняется по {charges}. {summary}"
+    if punishment_info:
+        final_summary += f" {punishment_info}"
+    
+    return final_summary
 
+ 
 # Streamlit app configuration
 st.set_page_config(page_title="Russian Court Case Summarizer", layout="wide")
 
