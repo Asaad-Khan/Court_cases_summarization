@@ -32,10 +32,7 @@ def extract_punishment_info(text):
     return ''
 
 def summarize_russian(text):
-    cleaned_text = preprocess(text)
-    
-    # Extract key case details
-    defendant, charges = extract_case_details(cleaned_text)
+    cleaned_text = preprocess_text(text)
     
     # Limit input to 512 tokens (prevents extreme-length summaries)
     inputs = tokenizer(
@@ -74,19 +71,10 @@ def summarize_russian(text):
 
     # Construct final summary (only in Russian)
     final_summary = summary
-    if defendant and charges:
-        final_summary = f"{defendant} обвиняется по {charges}. {summary}"
-    elif defendant:
-        final_summary = f"{defendant}. {summary}"
-    elif charges:
-        final_summary = f"{charges}. {summary}"
-    
     if punishment_info:
         final_summary += f" {punishment_info}"
     
     return final_summary.strip()
-
-
 
 # Streamlit interface
 st.set_page_config(page_title="Russian Court Case Summarizer", layout="wide")
@@ -103,4 +91,3 @@ if st.button("Создать резюме"):
         st.write(summary)
     else:
         st.error("Пожалуйста, введите текст для резюмирования.")
-
