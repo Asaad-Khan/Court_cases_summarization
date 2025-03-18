@@ -31,32 +31,61 @@ def extract_punishment_info(text):
         return min(punishment_sentences, key=len)
     return ''
 
-# Optimized summarization function
 def summarize_russian(text):
     cleaned_text = preprocess(text)
+    
+    # Extract key case details
+    defendant, charges = extract_case_details(cleaned_text)
+    
+    # Limit input to 512 tokens (prevents extreme-length summaries)
     inputs = tokenizer(
         cleaned_text,
         return_tensors="pt",
         truncation=True,
         max_length=512
     )
+    
+    # Get word count of the cleaned input
+    input_word_count = len(cleaned_text.split())
+
+    # Dynamically set summary length limits
+    if input_word_count < 100:
+        max_summary_length = 50  # Short for short inputs
+    elif input_word_count < 300:
+        max_summary_length = 70  # Medium-length texts
+    else:
+        max_summary_length = 100  # Hard cap on long summaries
+
+    # Generate summary with enforced max length
     summary_ids = model.generate(
         inputs["input_ids"],
         num_beams=5,
         no_repeat_ngram_size=3,
-        length_penalty=2.0,
-        max_length=80,  # Slightly shorter summary
+        length_penalty=1.2,  # Lower value forces shorter summaries
+        max_length=max_summary_length,
         min_length=20,
         early_stopping=True
     )
+    
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
-    # Append only one short punishment sentence
+    # Extract punishment information
     punishment_info = extract_punishment_info(cleaned_text)
-    if punishment_info and punishment_info not in summary:
-        summary += f" {punishment_info}"
 
-    return summary
+    # Construct final summary (only in Russian)
+    final_summary = summary
+    if defendant and charges:
+        final_summary = f"{defendant} обвиняется по {charges}. {summary}"
+    elif defendant:
+        final_summary = f"{defendant}. {summary}"
+    elif charges:
+        final_summary = f"{charges}. {summary}"
+    
+    if punishment_info:
+        final_summary += f" {punishment_info}"
+    
+    return final_summary.strip()
+
 
 
 # Streamlit interface
