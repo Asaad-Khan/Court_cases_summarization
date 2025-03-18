@@ -25,11 +25,11 @@ def extract_case_details(text):
     
     # Search for the defendant's name
     defendant_match = re.search(r'в отношении\s+([А-ЯЁ][а-яё]+\s[А-ЯЁ][а-яё]+)', text)
-    defendant = defendant_match.group(1) if defendant_match else "Defendant"
+    defendant = defendant_match.group(1) if defendant_match else None
 
     # Search for the charges (Ugolovny Kodeks reference)
     charges_match = re.findall(r'ст\.\s*\d+\s*ч\.\s*\d+', text)
-    charges = ', '.join(charges_match) if charges_match else "Not specified"
+    charges = ', '.join(charges_match) if charges_match else None
 
     return defendant, charges
 
@@ -43,6 +43,7 @@ def extract_punishment_info(text):
         return min(punishment_sentences, key=len)
     return ''
 
+# Optimized summarization function
 def summarize_russian(text):
     cleaned_text = preprocess(text)
     
@@ -72,7 +73,7 @@ def summarize_russian(text):
         inputs["input_ids"],
         num_beams=5,
         no_repeat_ngram_size=3,
-        length_penalty=1.5,  # Prevents excessive length
+        length_penalty=1.5,
         max_length=max_summary_length,
         min_length=20,
         early_stopping=True
@@ -83,14 +84,19 @@ def summarize_russian(text):
     # Extract punishment information
     punishment_info = extract_punishment_info(cleaned_text)
 
-    # Ensure summary contains key case details
-    final_summary = f"{defendant} is charged under {charges}. {summary}"
+    # Build final summary dynamically
+    final_summary = summary
+    if defendant and charges:
+        final_summary = f"{defendant} is charged under {charges}. {summary}"
+    elif defendant:
+        final_summary = f"{defendant} is involved in the case. {summary}"
+    elif charges:
+        final_summary = f"The case involves charges under {charges}. {summary}"
+    
     if punishment_info:
         final_summary += f" {punishment_info}"
     
     return final_summary
-
-
 
 # Streamlit app configuration
 st.set_page_config(page_title="Russian Court Case Summarizer", layout="wide")
@@ -114,4 +120,3 @@ if st.button("Generate Summary"):
         st.write(f"**Word count in summary:** {output_word_count}")
     else:
         st.error("Please enter court case text.")
-
