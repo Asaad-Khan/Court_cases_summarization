@@ -51,7 +51,7 @@ def summarize_russian(text):
     elif input_word_count < 300:
         max_summary_length = 70  # Medium-length texts
     else:
-        max_summary_length = 100  # Hard cap on long summaries
+        max_summary_length = 200  # Hard cap on long summaries
 
     # Generate summary with enforced max length
     summary_ids = model.generate(
