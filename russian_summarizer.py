@@ -74,20 +74,24 @@ def summarize_russian(text):
     if punishment_info:
         final_summary += f" {punishment_info}"
     
-    return final_summary.strip()
+    return final_summary.strip(), input_word_count, len(final_summary.split())
 
 # Streamlit interface
 st.set_page_config(page_title="Russian Court Case Summarizer", layout="wide")
 
 st.title("⚖️ Russian Court Case Summarizer")
 
-user_text = st.text_area("Введите текст судебного дела:", height=250)
+user_text = st.text_area("Enter the court case text:", height=250)
 
-if st.button("Создать резюме"):
+if st.button("Generate Summary"):
     if user_text.strip():
-        with st.spinner('Создание резюме...'):
-            summary = summarize_russian(user_text)
-        st.subheader("📝 Резюме дела:")
+        with st.spinner('Generating summary...'):
+            summary, input_word_count, summary_word_count = summarize_russian(user_text)
+        st.subheader("📝 Case Summary:")
         st.write(summary)
+        
+        st.subheader("📊 Word Count:")
+        st.write(f"Original text: {input_word_count} words")
+        st.write(f"Summarized text: {summary_word_count} words")
     else:
-        st.error("Пожалуйста, введите текст для резюмирования.")
+        st.error("Please enter text for summarization.")
