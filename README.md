@@ -1,1 +1,1 @@
-# Court_cases_summarization
+Russian Court Case Summarizer is a natural language processing (NLP) project that automates the summarization of Russian legal texts using the RuT5 transformer model. The project is implemented as a Streamlit web app, allowing users to input lengthy court decisions and receive concise, structured summaries.
