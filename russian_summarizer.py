@@ -9,12 +9,12 @@ import nltk
 
 nltk.download('stopwords')
 
-# Load summarization model (RuT5 Gazeta)
+
 model_name = "IlyaGusev/rut5_base_sum_gazeta"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
-# Text cleaning function
+
 def preprocess_text(text):
     text = BeautifulSoup(text, "html.parser").get_text()
     text = re.sub(r"(К\s*делу\s*№\s*)?(П\s*Р\s*И\s*Г\s*О\s*В\s*О\s*Р)", "", text, flags=re.IGNORECASE)
@@ -42,10 +42,10 @@ def summarize_russian(text):
         max_length=512
     )
     
-    # Get word count of the cleaned input
+    
     input_word_count = len(cleaned_text.split())
 
-    # Dynamically set summary length limits
+    
     if input_word_count < 100:
         max_summary_length = 50  # Short for short inputs
     elif input_word_count < 300:
@@ -53,7 +53,7 @@ def summarize_russian(text):
     else:
         max_summary_length = 200  # Hard cap on long summaries
 
-    # Generate summary with enforced max length
+    
     summary_ids = model.generate(
         inputs["input_ids"],
         num_beams=5,
@@ -66,17 +66,17 @@ def summarize_russian(text):
     
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
-    # Extract punishment information
+    
     punishment_info = extract_punishment_info(cleaned_text)
 
-    # Construct final summary (only in Russian)
+    
     final_summary = summary
     if punishment_info:
         final_summary += f" {punishment_info}"
     
     return final_summary.strip(), input_word_count, len(final_summary.split())
 
-# Streamlit interface
+
 st.set_page_config(page_title="Russian Court Case Summarizer", layout="wide")
 
 st.title("⚖️ Russian Court Case Summarizer")
